@@ -19,10 +19,24 @@
     + geometries 描述几何模型 形状
     + materials 材质 看起来如何
       + 颜色
+  + group 关联的元素组成一个group 整体操作
+    + 
 + local server
 + transform object
+  + position
+  + scale
+  + rotation
+  + quatenion
 + animations
+  + requestAnimationFrame 60fps 
+  + clock
+  + gsap
 + cameras
+  + PerspectiveCamera 透视镜头 类似人的视角，远小近大
+  + OrthoGraphicCamera 正视镜头 物体不会因为距离的远近而改变尺寸
+  + CubeCamera
+  + ArrayCamera
++ controls 控制物体，控制摄像头、或是物体
 + fullscreen and resizing
 + geometries
 + debug ui
