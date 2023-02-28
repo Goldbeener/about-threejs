@@ -37,11 +37,36 @@
   + CubeCamera
   + ArrayCamera
 + controls 控制物体，控制摄像头、或是物体
+  + OrbitControls 控制查看物体的视角
+  + xxx
 + fullscreen and resizing
+  + 全屏
+  + 屏幕resize适配
 + geometries
-+ debug ui
-+ textures
+  + BoxGeometry
+  + 自定义Geometry
+    + 其实就是定义顶点，三个顶点确定一个平面
++ debug ui  调试界面，改变对象属性
+  + dat.gui
+    + add
+    + addColor
++ textures 纹理
+  + TextureLoader 
+  + LoadingManager
+  + mipmapping
+    + minFilter
+    + magFilter
+  + format and opt
 + materials
+  + shader 着色器 
+  + 各种材质
 + 3D text
-
+  + face type 
+  + fontLoader
+    + 无返回值
+    + 回调形式
+  + TextBufferGeometry
++ go live 静态网页部署
+  + vercel
+  + github pages
 ####
