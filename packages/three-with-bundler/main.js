@@ -3,22 +3,48 @@ import * as THREE from 'three'
 import gsap from 'gsap'
 import * as dat from 'dat.gui'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import { RectAreaLightHelper } from 'three/examples/jsm/helpers/RectAreaLightHelper'
+
+/**
+ * scene
+ * camera
+ * objects
+ *   material 材质 
+ *     texture 纹理
+ *     材质类型
+ *        stand
+ *        basic
+ *        xxxx
+ *   geometry
+ *     mesh
+ *     sphere
+ *     torus
+ *     xxx
+ * 
+ * dat.gui
+ * controls
+ * 
+ * lights
+ * 
+*/
 
 // Create a scene
 const scene = new THREE.Scene()
 
+// fog
+const fog = new THREE.Fog(0x262837, 1, 15)
+scene.fog = fog
+
 // debug
 const gui = new dat.GUI({ width: 400 })
-gui.close()
+// gui.close()
 
 // Size
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight
 }
-// handle resize
+// 屏幕resize适配
 window.addEventListener('resize',() =>  {
   // update Sizes
   sizes.width = window.innerWidth
@@ -33,7 +59,7 @@ window.addEventListener('resize',() =>  {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 }, false)
 
-// handle fullscreen
+// 全屏切换
 window.addEventListener('dblclick', () => {
   if (!document.fullscreenElement) {
     canvas.requestFullscreen().catch(e => {
@@ -44,370 +70,212 @@ window.addEventListener('dblclick', () => {
   }
 }, false)
 
-// eventListener
-const cursors = {
-  x: 0,
-  y: 0,
-}
-window.addEventListener('mousemove', (e) => {
-  cursors.x = e.clientX / sizes.width - 0.5
-  cursors.y = -(e.clientY / sizes.height - 0.5)
-}, false)
-
-//threejs 纹理loader
-const loadingManager = new THREE.LoadingManager()
-loadingManager.onStart = () => { console.log('onStart') }
-loadingManager.onLoad = () => { console.log('onLoad') }
-loadingManager.onProgress = () => { console.log('onProgress') }
-loadingManager.onError = () => { console.log('onError') }
-
-
-const textureLoader = new THREE.TextureLoader(loadingManager)
-const cubeTextureLoader = new THREE.CubeTextureLoader()
-
-
-const colorTexture = textureLoader.load('/textures/door/color.jpg')
-const alphaTexture = textureLoader.load('/textures/door/alpha.jpg')
-const ambientOcclusionTexture = textureLoader.load('/textures/door/ambientOcclusion.jpg')
-const heightTexture = textureLoader.load('/textures/door/height.jpg')
-const normalTexture = textureLoader.load('/textures/door/normal.jpg')
-const roughnessTexture = textureLoader.load('/textures/door/roughness.jpg')
-const metalnessTexture = textureLoader.load('/textures/door/metalness.jpg')
-
-const environmentMapTexture = cubeTextureLoader.load([
-  '/textures/environmentMaps/4/px.png',
-  '/textures/environmentMaps/4/nx.png',
-  '/textures/environmentMaps/4/py.png',
-  '/textures/environmentMaps/4/ny.png',
-  '/textures/environmentMaps/4/pz.png',
-  '/textures/environmentMaps/4/nz.png',
-])
-
-const matcapTexture = textureLoader.load('/textures/matcaps/5.png')
-const gradientTexture = textureLoader.load('/textures/gradients/5.jpg')
-gradientTexture.minFilter = THREE.NearestFilter
-gradientTexture.magFilter = THREE.NearestFilter
-gradientTexture.generateMipmaps = false
-
-// 3d font
-const fontLoader = new FontLoader();
-const fontConf = {
-  size: 0.5,
-  height: 0.2,
-}
-fontLoader.load(
-  '/fonts/AaXianXiaShaoNian_Regular.json',
-  font => {
-    console.log(font)
-    const textGeometry = new TextGeometry(
-      "定儿们睡了吗?",
-      {
-        font,
-        size: fontConf.size,
-        height: fontConf.height,
-        curveSegments: 6,
-        // bevelEnabled: false,
-        // bevelThickness: 0.1,
-        // bbevelSize: 1,
-        // bevelOffset: 0,
-        // bevelSegments: 5
-      }
-    )
-    textGeometry.computeBoundingBox()
-    console.log(textGeometry.boundingBox)
-    textGeometry.translate(
-      - textGeometry.boundingBox.max.x * 0.5,
-      - textGeometry.boundingBox.max.y * 0.5,
-      - textGeometry.boundingBox.max.z * 0.5
-    )
-    const textMaterial = new THREE.MeshMatcapMaterial({ matcap: matcapTexture })
-    const textMesh = new THREE.Mesh(textGeometry, textMaterial)
-    scene.add(textMesh)
-    
-    const donutGeometry = new THREE.TorusBufferGeometry(0.3, 0.2, 20, 45)
-    const donutMaterial = new THREE.MeshNormalMaterial()
-    for(let i = 0; i < 200; i++) {
-      const donut = new THREE.Mesh(donutGeometry, donutMaterial)
-
-      donut.position.x = (Math.random()  - 0.5) * 10
-      donut.position.y = (Math.random()  - 0.5) * 10
-      donut.position.z = (Math.random()  - 0.5) * 10
-
-      donut.rotation.x = Math.random() * Math.PI
-      donut.rotation.y = Math.random() * Math.PI
-
-      const scale = Math.random()
-      donut.scale.set(scale, scale, scale)
-      scene.add(donut)
-    }
-  }
-)
-
-gui.add(fontConf, 'size').min(0).max(100).step(1).name('fontSize')
-gui.add(fontConf, 'height').min(0).max(60).step(1).name('fontHeight')
-
-
-
-// cube
-// 后三位参数，每个面由 多少个三角形组成
-const geometry = new THREE.BoxGeometry(1, 1, 1, 2, 2, 2)
-
-// 创建自定义的geometry
-// const geometry = new THREE.BufferGeometry()
-// 顶点坐标 分别是x,y,z
-// const  positionArray = new Float32Array([
-//   0, 0, 0,
-//   1, 0, 0,
-//   0, 1, 0,
-// ])
-
-// 自定义geometry
-/* 
-const count = 50;
-const  positionArray = new Float32Array(count * 3 * 3)
-// TODO index 顶点复用
-for (let i = 0; i < count * 3 * 3; i++) {
-  positionArray[i] = (Math.random() - 0.5) * 2
-}
-
-const positionsAttribute = new THREE.BufferAttribute(positionArray, 3)
-geometry.setAttribute('position', positionsAttribute)
-*/
-
-// debug color
-const parameters = {
-  color: 0xff6600,
-  spin: () => {
-    console.log('spin')
-    gsap.to(mesh.rotation, { duration: 1, y: mesh.rotation.y + 10 })
-  }
-}
-
 // texture
-// 原生js方式引入纹理
-// const img = new Image();
-// const texture = new THREE.Texture(img)
-// img.onload = () => {
-//   texture.needsUpdate = true
-// }
-// img.src = '/textures/door/color.jpg'
+const textureLoader = new THREE.TextureLoader()
 
+const doorColorTexture = textureLoader.load('/textures/door/color.jpg')
+const doorAlphaTexture = textureLoader.load('/textures/door/alpha.jpg')
+const doorAmbientOcclusionTexture = textureLoader.load('/textures/door/ambientOcclusion.jpg')
+const doorHeightTexture = textureLoader.load('/textures/door/height.jpg')
+const doorNormalTexture = textureLoader.load('/textures/door/normal.jpg')
+const doorMetalnessTexture = textureLoader.load('/textures/door/metalness.jpg')
+const doorRoughnessTexture = textureLoader.load('/textures/door/roughness.jpg')
 
+const wallColorTexture = textureLoader.load('/textures/bricks/color.jpg')
+const wallAmbientOcclusionTexture = textureLoader.load('/textures/bricks/ambientOcclusion.jpg')
+const wallNormalTexture = textureLoader.load('/textures/bricks/normal.jpg')
+const wallRoughnessTexture = textureLoader.load('/textures/bricks/roughness.jpg')
 
-// texture  transform
-// colorTexture.repeat.x = 2
-// colorTexture.repeat.y = 2
-// colorTexture.wrapS = THREE.MirroredRepeatWrapping
-// colorTexture.wrapT = THREE.MirroredRepeatWrapping
+const grassColorTexture = textureLoader.load('/textures/grass/color.jpg')
+const grassAmbientOcclusionTexture = textureLoader.load('/textures/grass/ambientOcclusion.jpg')
+const grassNormalTexture = textureLoader.load('/textures/grass/normal.jpg')
+const grassRoughnessTexture = textureLoader.load('/textures/grass/roughness.jpg')
 
-// colorTexture.offset.x = 0.5
-// colorTexture.offset.y = 0.5
+grassColorTexture.repeat.set(8, 8)
+grassAmbientOcclusionTexture.repeat.set(8, 8)
+grassNormalTexture.repeat.set(8, 8)
+grassRoughnessTexture.repeat.set(8, 8)
 
-// colorTexture.rotation  = Math.PI
-// colorTexture.center.x = 0.5
-// colorTexture.center.y = 0.5
+grassColorTexture.wrapS = THREE.RepeatWrapping
+grassAmbientOcclusionTexture.wrapS = THREE.RepeatWrapping
+grassNormalTexture.wrapS = THREE.RepeatWrapping
+grassRoughnessTexture.wrapS = THREE.RepeatWrapping
 
-// const material = new THREE.MeshBasicMaterial({ map: alphaTexture })  
-// const mesh = new THREE.Mesh(geometry, material)
-
-
-// debug color
-gui
-  .addColor(parameters, 'color')
-  .onChange(() => {
-    console.log('color change', parameters.color)
-    material.color.set(parameters.color)
-  })
-
-// debug function
-gui.add(parameters, 'spin')
-
-// Position
-// mesh.position.x = 0.6 // 左右移动 正值向右
-// mesh.position.y = -0.5 // 上下 正值向上
-// mesh.position.z = -1 // 前后 正值向前
-// mesh.position.set(0.6, -0.5, -1)
-
-// Scale
-// mesh.scale.set(2, 0.8, 0.5)
-
-// Rotation
-// mesh.rotation.reorder('yxz') // 控制旋转的顺序
-// mesh.rotation.x = Math.PI / 4 // 旋转角度
-// mesh.rotation.y = Math.PI / 4
-
-/**
- * 旋转的时候，任意一个轴的转动都会影响到其他轴的转动
- * 因此不同的旋转顺序会有不同结果
- * 
- * quatenion 跟 rotation 是相同的作用
- * 但是不同的实现
- * 二者会相互影响
-*/
-
-// mesh.position.normalize() // 恢复原位置
-// add mesh to the scene
-// scene.add(mesh)
-
-// add sphere plane torus
-// const commonMaterial = new THREE.MeshBasicMaterial()
-// commonMaterial.map = colorTexture
-// // commonMaterial.color = new THREE.Color(0xff00ff) 
-// commonMaterial.alphaMap = alphaTexture
-// commonMaterial.transparent = true 
-// commonMaterial.side = THREE.DoubleSide
-
-// const material = new THREE.MeshNormalMaterial()
-// material.flatShading = true 
-
-// 材质捕捉 
-// const material = new THREE.MeshMatcapMaterial()
-// material.matcap = matcapTexture
-
-// 靠近才显示为白色，越远越黑 用在游戏场景
-// const material = new THREE.MeshDepthMaterial()
-
-// const material = new THREE.MeshLambertMaterial()
-
-// const material = new THREE.MeshPhongMaterial()
-// material.shininess = 100
-// material.specular = new THREE.Color(0xff0000)
-
-// 渐变
-// const material = new THREE.MeshToonMaterial()
-// material.gradientMap = gradientTexture
-
-// const material = new THREE.MeshStandardMaterial()
-// material.roughness = 0.45
-// material.metalness = 0.65
-// material.map = colorTexture
-// material.aoMap = ambientOcclusionTexture
-// material.aoMapIntensity = 1
-// material.displacementMap = heightTexture
-// material.displacementScale = 0.05
-// material.roughnessMap = roughnessTexture
-// material.metalnessMap = metalnessTexture
-// material.normalMap = normalTexture
-// material.normalScale.set(1, 1)
-// material.alphaMap = alphaTexture
-// material.transparent = true
-
-
-const material = new THREE.MeshStandardMaterial()
-material.roughness = 0.45
-material.metalness = 0.65
-material.envMap = environmentMapTexture
-
-gui
-  .add(material, 'roughness')
-  .min(0)
-  .max(1)
-
-gui
-  .add(material, 'metalness')
-  .min(0)
-  .max(1)
-
-gui
-  .add(material, 'aoMapIntensity')
-  .min(0)
-  .max(10)
-
-gui
-  .add(material, 'displacementScale')
-  .min(0)
-  .max(1)
-  .step(0.0001)
-
-
-
+grassColorTexture.wrapT = THREE.RepeatWrapping
+grassAmbientOcclusionTexture.wrapT = THREE.RepeatWrapping
+grassNormalTexture.wrapT = THREE.RepeatWrapping
+grassRoughnessTexture.wrapT = THREE.RepeatWrapping
 // lights
-// 环境光源
-const  ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
-// scene.add(ambientLight)
-// 点光源
-const pointLight = new THREE.PointLight(0xffffff, 0.5)
-pointLight.position.x = 2
-pointLight.position.y = 3
-pointLight.position.z = 4
-// scene.add(pointLight)
 
-const sphere = new THREE.Mesh(
-  new THREE.SphereBufferGeometry(0.5, 64, 64), 
-  material
+// 环境光源 均匀照亮场景中的所有物体 没有死角 不能用来投影
+const  ambientLight = new THREE.AmbientLight(0xb9d5ff, 0.12)
+scene.add(ambientLight)
+// 第二个参数 光照强度
+gui.add(ambientLight, 'intensity').min(0).max(1).step(0.01).name('ambientLight')
+  
+
+// 平行光 沿着特定方向发射的光 表现像是无限远 光线都是平行的  常用来模拟太阳光
+const moonLight = new THREE.DirectionalLight(0xb9d5ff, 0.12)
+moonLight.position.set(4, 5, -2)
+
+gui.add(moonLight, 'intensity').min(0).max(1).step(0.01).name('directional')
+gui.add(moonLight.position, 'x').min(-5).max(5).step(0.001)
+gui.add(moonLight.position, 'y').min(-5).max(5).step(0.001)
+gui.add(moonLight.position, 'z').min(-5).max(5).step(0.001)
+
+scene.add(moonLight)
+// 
+
+
+// const textureLoader = new  THREE.TextureLoader()
+const bakedShadow = textureLoader.load('/textures/bakedShadow.jpg')
+const simpleShadow = textureLoader.load('/textures/simpleShadow.jpg')
+
+// House Group
+const house = new THREE.Group()
+scene.add(house)
+
+// Walls
+const walls = new THREE.Mesh(
+  new THREE.BoxBufferGeometry(4, 2.5, 4),
+  new THREE.MeshStandardMaterial({ 
+    map: wallColorTexture,
+    aoMap: wallAmbientOcclusionTexture,
+    normalMap: wallNormalTexture,
+    roughnessMap: wallRoughnessTexture
+  })
 )
-sphere.geometry.setAttribute(
+// 设置第二组uv 配合aoMap
+walls.geometry.setAttribute(
   'uv2',
-  new THREE.BufferAttribute(sphere.geometry.attributes.uv.array, 2)
+  new THREE.Float32BufferAttribute(walls.geometry.attributes.uv.array, 2)
 )
+walls.position.y = 2.5 / 2
+house.add(walls)
 
-const plane = new THREE.Mesh(
-  new THREE.PlaneBufferGeometry(1, 1, 100, 100), 
-  material
+// floor
+const floor = new THREE.Mesh(
+  new THREE.PlaneBufferGeometry(20, 20),
+  new THREE.MeshStandardMaterial({ 
+    map: grassColorTexture,
+    aoMap: grassAmbientOcclusionTexture,
+    normalMap: grassNormalTexture,
+    roughnessMap: grassRoughnessTexture
+  })
 )
-plane.geometry.setAttribute(
+// 设置第二组uv 配合aoMap
+floor.geometry.setAttribute(
   'uv2',
-  new THREE.BufferAttribute(plane.geometry.attributes.uv.array, 2)
+  new THREE.Float32BufferAttribute(floor.geometry.attributes.uv.array, 2)
 )
+floor.rotation.x = - Math.PI / 2
+floor.position.y = 0
+scene.add(floor)
 
-const torus = new THREE.Mesh(
-  new THREE.TorusBufferGeometry(0.3, 0.2, 64, 128), 
-  material
+// roof
+const roof = new THREE.Mesh(
+  new THREE.ConeBufferGeometry(3.5, 1, 4),
+  new THREE.MeshStandardMaterial({ color: 0xb35f45 })
 )
-torus.geometry.setAttribute(
+roof.position.y = 2.5 + 1 / 2
+roof.rotation.y = Math.PI / 4
+scene.add(roof)
+
+// Door
+const door = new THREE.Mesh(
+  new THREE.PlaneBufferGeometry(2, 2, 100, 100),
+  new THREE.MeshStandardMaterial({
+    map: doorColorTexture,
+    transparent: true,
+    alphaMap: doorAlphaTexture,
+    aoMap: doorAmbientOcclusionTexture,
+    displacementMap: doorHeightTexture, // 需要设置每一个面需要多少个子面 这样才能实现层次
+    displacementScale: 0.1,
+    normalMap: doorNormalTexture,
+    metalnessMap: doorMetalnessTexture,
+    roughnessMap: doorRoughnessTexture
+  })
+)
+// 设置第二组uv 配合aoMap
+door.geometry.setAttribute(
   'uv2',
-  new THREE.BufferAttribute(torus.geometry.attributes.uv.array, 2)
+  new THREE.Float32BufferAttribute(door.geometry.attributes.uv.array, 2)
 )
+door.position.y = 1
+door.position.z = 4 / 2 + 0.01 // 避免z轴冲突
+house.add(door)
 
-sphere.position.x = -2
-torus.position.x = 2
-// scene.add(sphere)
-// scene.add(sphere, plane, torus)
-// debug mesh
-// gui
-//   .add(mesh.position, 'y')
-//   .min(-3)
-//   .max(3)
-//   .step(0.01)
-//   .name('cube Y')
+// Door Light 点光源
+const doorLight = new THREE.PointLight(0xff7d46, 1, 7)
+doorLight.position.set(0, 2.2, 2.7)
+house.add(doorLight)
 
-// gui.add(mesh, 'visible')
+// Bushs
+const bushGeometry = new THREE.SphereBufferGeometry(1, 16, 16)
+const bushMaterial = new THREE.MeshStandardMaterial({ color: 0x89c854 })
 
-// gui.add(material, 'wireframe')
+const bush1 = new THREE.Mesh(bushGeometry, bushMaterial)
+bush1.scale.set(0.5, 0.5, 0.5)
+bush1.position.set(0.8, 0.2, 2.2)
 
+const bush2 = new THREE.Mesh(bushGeometry, bushMaterial)
+bush2.scale.set(0.25, 0.25, 0.25)
+bush2.position.set(1.4, 0.2, 2.1)
 
+const bush3 = new THREE.Mesh(bushGeometry, bushMaterial)
+bush3.scale.set(0.4, 0.4, 0.4)
+bush3.position.set(-0.8, 0.1, 2.2)
 
-// Group
-const group = new THREE.Group()
-// scene.add(group)
+const bush4 = new THREE.Mesh(bushGeometry, bushMaterial)
+bush4.scale.set(0.15, 0.15, 0.15)
+bush4.position.set(-1, 0.01, 2.6)
 
-const cube1 = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshBasicMaterial({ color: 0xff0000 })
-)
-const cube2 = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-)
-const cube3 = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshBasicMaterial({ color: 0x0000ff })
-)
-group.add(cube1)
-group.add(cube2)
-group.add(cube3)
+house.add(bush1, bush2, bush3, bush4)
 
-cube2.position.x = -2
-cube3.position.x = 2
-group.rotation.y = Math.PI / 2
+// Graves
+const graves = new THREE.Group()
+scene.add(graves)
+
+const gravesGeometry = new THREE.BoxBufferGeometry(0.6, 0.8, 0.2)
+const gravesMaterial = new THREE.MeshStandardMaterial({ color: 0xb2b6b1 })
+
+for (let i = 0; i < 50; i++) {
+  // 确定位置 在一个环形的区域：（半径区间 * 三角函数）
+  const angle = Math.random() * Math.PI * 2
+  const radius = 4 + Math.random() * 5 // 4-9 区间内
+  const x = Math.cos(angle) * radius
+  const z = Math.sin(angle) * radius
+
+  const grave = new THREE.Mesh(gravesGeometry, gravesMaterial)
+
+  grave.position.set(x, 0.3, z)
+
+  grave.rotation.y = (Math.random() - 0.5) * 0.4
+  grave.rotation.z = (Math.random() - 0.5) * 0.4
+
+  grave.castShadow = true
+
+  graves.add(grave);
+}
+
+// Ghosts
+const ghost1 = new THREE.PointLight(0xffff00, 3, 3)
+scene.add(ghost1)
+
+const ghost2 = new THREE.PointLight(0xff00ff, 3, 3)
+scene.add(ghost2)
+
+const ghost3 = new THREE.PointLight(0x00ffff, 3, 3)
+scene.add(ghost3)
+
 
 // Camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height)
-camera.position.x = 1
+camera.position.x = 0
 camera.position.y = 1
-camera.position.z = 2
-// 计算两个向量之间的距离
-// console.log(mesh.position.distanceTo(camera.position));
+camera.position.z = 100
+
+camera.lookAt(door)
 
 scene.add(camera)
 
@@ -415,8 +283,8 @@ scene.add(camera)
 // camera.lookAt(mesh.position)
 
 // 轴线
-const axHelper = new THREE.AxisHelper(2)
-// scene.add(axHelper)
+const axHelper = new THREE.AxisHelper(5)
+scene.add(axHelper)
 
 // Renderer
 const canvas = document.querySelector('.webgl')
@@ -426,14 +294,52 @@ const renderer = new THREE.WebGLRenderer({
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.setClearColor(0x262837) // 设置renderer颜色 与 fog一致 隐藏plane边缘
 // renderer.render(scene, camera)
+
+// shadows
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadow
+
+// 光源
+moonLight.castShadow = true
+
+doorLight.castShadow = true
+ghost1.castShadow = true
+ghost2.castShadow = true
+ghost3.castShadow = true
+
+walls.castShadow = true
+bush1.castShadow = true
+bush2.castShadow = true
+bush3.castShadow = true
+bush4.castShadow = true
+
+floor.receiveShadow = true
+
+// 阴影优化
+doorLight.shadow.mapSize.width = 256
+doorLight.shadow.mapSize.height = 256
+doorLight.shadow.camera.far = 7
+
+ghost1.shadow.mapSize.width = 256
+ghost1.shadow.mapSize.height = 256
+ghost1.shadow.camera.far = 7
+
+ghost2.shadow.mapSize.width = 256
+ghost2.shadow.mapSize.height = 256
+ghost2.shadow.camera.far = 7
+
+ghost3.shadow.mapSize.width = 256
+ghost3.shadow.mapSize.height = 256
+ghost3.shadow.camera.far = 7
 
 const controls = new OrbitControls(camera, canvas)
 // controls.target.y = 1
 // controls.update()
 // controls.enableDamping = true
 
-// deltaTime
+// deltaTime n
 let  time = Date.now()
 
 function tick() {
@@ -452,27 +358,22 @@ const clock = new THREE.Clock()
 function clockTick() {
   // 逝去的时间
   const elapsedTime = clock.getElapsedTime()
-  // console.log(elapsedTime)
 
-  // mesh.position.y = Math.sin(elapsedTime) 
-  // mesh.position.x = Math.cos(elapsedTime)
+  // update ghost
+  const ghost1Angle = elapsedTime * 0.5
+  ghost1.position.x = Math.cos(ghost1Angle) * 4
+  ghost1.position.z = Math.sin(ghost1Angle) * 4
+  ghost1.position.y = Math.sin(elapsedTime * 3)
 
-  // update 
-  // sphere.rotation.y = 0.1 * elapsedTime
-  // plane.rotation.y = 0.1 * elapsedTime
-  // torus.rotation.y = 0.1 * elapsedTime
+  const ghost2Angle = - elapsedTime * 0.32
+  ghost2.position.x = Math.cos(ghost2Angle) * 5
+  ghost2.position.z = Math.sin(ghost2Angle) * 5
+  ghost2.position.y = Math.sin(elapsedTime * 4)  + Math.sin(elapsedTime * 2.5)
 
-  // sphere.rotation.x = 0.15 * elapsedTime
-  // plane.rotation.x = 0.15 * elapsedTime
-  // torus.rotation.x = 0.15 * elapsedTime
-  
-  // camera.lookAt(mesh.position)
-
-  // update camera
-  // camera.position.x = Math.sin(cursors.x * Math.PI * 2) * 3
-  // camera.position.z = Math.cos(cursors.x * Math.PI * 2) * 3
-  // camera.position.y = cursors.y * 5
-  // camera.lookAt(mesh.position)
+  const ghost3Angle = - elapsedTime * 0.18
+  ghost3.position.x = Math.cos(ghost3Angle) * (7 + Math.sin(elapsedTime * 0.32))
+  ghost3.position.z = Math.sin(ghost3Angle) * (7 + Math.sin(elapsedTime * 0.5))
+  ghost3.position.y = Math.sin(elapsedTime * 5)  + Math.sin(elapsedTime * 2)
 
   // update controls
   controls.update()
@@ -483,9 +384,26 @@ function clockTick() {
 
 clockTick()
 
+gui.add(camera.position, 'z').min(0).max(100).name('camera')
+
 // gsap
-// gsap.to(mesh.position, { x: 1, duration: 1, delay: 1 })
-// gsap.to(mesh.position, { x: 0, duration: 1, delay: 2 })
+gsap.to(camera.position, { z: 5, duration: 3, delay: 5 })
+gsap.to(camera.position, { y: 5, duration: 1, delay: 11 })
+gsap.fromTo(camera.position,{}, {
+  delay: 12,
+  keyframes: [
+    { x: 5, z: 0, duration: 4, },
+    { x: 0, z: -5,  duration: 4 },
+    { x: -5, z: 0,  duration: 4 },
+    { x: 0, z: 5,  duration: 4 },
+    { y: 2, z: 6,  duration: 1 }
+  ]
+})
+// gsap.to(camera.position, { x: 0, z: -5,  duration: 4, delay: 14, ease: "none" })
+// gsap.to(camera.position, { x: -5, z: 0,  duration: 4, delay: 18, ease: "none" })
+// gsap.to(camera.position, { x: 0, z: 5,  duration: 4, delay: 22, ease: "none" })
+// gsap.to(camera.position, { y: 2, z: 6,  duration: 1, delay: 26, ease: "none" })
+
 function gsapTick() {
   renderer.render(scene, camera)
   window.requestAnimationFrame(gsapTick)
