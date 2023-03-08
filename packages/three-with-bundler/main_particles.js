@@ -77,130 +77,44 @@ window.addEventListener('dblclick', () => {
 // const cube = new THREE.Mesh(geometry, material)
 // scene.add(cube)
 
-const parameters = {
-  count: 10000,
-  size: 0.02,
-  radius: 5,
-  branch: 3,
-  spin: 0.2,
-  randomness: 0.2,
-  randomnessPower: 3,
-  insideColor: 0xff6030,
-  outsideColor: 0x0000ff,
+// Particles 粒子
+
+// 球形几何体
+// const particleGeometry = new THREE.SphereBufferGeometry(1, 32, 32)
+
+// 自定义几何体
+const particleGeometry = new THREE.BufferGeometry()
+const count = 10000
+const positions = new Float32Array(count * 3)
+const colors = new Float32Array(count * 3)
+
+for (let i = 0; i < count * 3; i++) {
+  positions[i] = (Math.random() - 0.5) * 10
+  colors[i] = Math.random()
 }
 
-let geometry, material, points;
+// 该几何体由500个点组成 
+particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
 
-// Galaxy
-const generateGalaxy = () => {
-  if (points) {
-    geometry.dispose()
-    material.dispose()
-    scene.remove(points)
-  }
+const particleMaterial = new THREE.PointsMaterial({
+  size: 0.2,
+  // color: 0xff6600,
+  vertexColors: true,
+  sizeAttenuation: true, // 粒子是否衰减 根据距离
+  // map: particleTexture
+  alphaMap: particleTexture,
+  transparent: true,
+  // 会有重叠问题 导致alphaMap失效 以下是解决方案
+  // alphaTest: 0.001, // 在这个色度之上的才渲染 还是会有边缘问题
+  // depthTest: false, // 告诉GPU 不考虑物体的相互遮挡 正常应该被挡住的也渲染 ， 如果还有其他颜色的物体会有问题
+  depthWrite: false, // GPU在渲染有层深的粒子时，存储在一个buffer里再渲染，这个直接告诉GPU被挡住的就不要往buffer里面放了，最后肯定也不会被遮盖
+  blending: THREE.AdditiveBlending  // 颜色叠加，越多重合颜色越高亮
+})
 
-  // 创建粒子
-  geometry = new THREE.BufferGeometry()
-  const positions = new Float32Array(parameters.count * 3)
-  const colors = new Float32Array(parameters.count * 3)
+const particle  = new THREE.Points(particleGeometry, particleMaterial)
+scene.add(particle)
 
-  // 创造一个随机颜色
-  const colorInside = new THREE.Color(parameters.insideColor)
-  const colorOutside = new THREE.Color(parameters.outsideColor)
-
-  for (let i = 0; i < parameters.count; i++) {
-    const i3 = i * 3
-
-    // Positions
-    const radius = Math.random() * parameters.radius
-    const spinAngle = radius * parameters.spin
-    const branchAngle = (i % parameters.branch) / parameters.branch * (Math.PI * 2)
-
-    const randomX = Math.pow(Math.random(), parameters.randomnessPower)  * (Math.random() > 0.5 ? 1 : -1)
-    const randomY = Math.pow(Math.random(), parameters.randomnessPower)  * (Math.random() > 0.5 ? 1 : -1)
-    const randomZ = Math.pow(Math.random(), parameters.randomnessPower)  * (Math.random() > 0.5 ? 1 : -1)
-
-    positions[i3 +  0]  = Math.cos(branchAngle + spinAngle) * radius + randomX
-    positions[i3 +  1]  = randomY
-    positions[i3 +  2]  = Math.sin(branchAngle + spinAngle) * radius + randomZ
-
-    // Colors
-    const mixedColor = colorInside.clone()
-    mixedColor.lerp(colorOutside, radius / parameters.radius)
-    colors[i3 + 0] =  mixedColor.r
-    colors[i3 + 1] =  mixedColor.g
-    colors[i3 + 2] =  mixedColor.b
-  }
-
-  geometry.setAttribute(
-    'position',
-    new THREE.BufferAttribute(positions, 3)
-  )
-  geometry.setAttribute(
-    'color',
-    new THREE.BufferAttribute(colors, 3)
-  )
-
-  material = new THREE.PointsMaterial({
-    // color: 0xff5588,
-    size: parameters.size,
-    sizeAttenuation: true,
-    depthWrite: false,
-    blending:  THREE.AdditiveBlending,
-    vertexColors: true, // 使用顶点颜色
-  })
-
-  points = new THREE.Points(geometry, material)
-  scene.add(points)
-}
-
-generateGalaxy()
-
-gui
-  .add(parameters, 'count')
-  .min(100)
-  .max(50000)
-  .step(100)
-  .onFinishChange(generateGalaxy)
-gui
-  .add(parameters, 'size')
-  .min(0.001)
-  .max(0.1)
-  .step(0.001)
-  .onFinishChange(generateGalaxy)
-gui
-  .add(parameters, 'radius')
-  .min(0.1)
-  .max(20)
-  .step(0.1)
-  .onFinishChange(generateGalaxy)
-gui
-  .add(parameters, 'branch')
-  .min(3)
-  .max(20)
-  .step(1)
-  .onFinishChange(generateGalaxy)
-gui
-  .add(parameters, 'spin')
-  .min(-5)
-  .max(5)
-  .step(0.001)
-  .onFinishChange(generateGalaxy)
-gui
-  .add(parameters, 'randomness')
-  .min(0)
-  .max(2)
-  .step(0.001)
-  .onFinishChange(generateGalaxy)
-gui
-  .add(parameters, 'randomnessPower')
-  .min(1)
-  .max(10)
-  .step(0.01)
-  .onFinishChange(generateGalaxy)
-
-gui.addColor(parameters, 'insideColor').onFinishChange(generateGalaxy)
-gui.addColor(parameters, 'outsideColor').onFinishChange(generateGalaxy)
 
 
 // Camera
@@ -255,6 +169,16 @@ const clock = new THREE.Clock()
 function clockTick() {
   // 逝去的时间
   const elapsedTime = clock.getElapsedTime()
+
+  //update particle
+  // particle.rotation.y = elapsedTime * 0.3
+
+  for (let i = 0; i < count; i++) {
+    const i3 = i * 3
+    const x = particleGeometry.attributes.position.array[i3 + 0]
+    particleGeometry.attributes.position.array[i3 + 1] = Math.sin(elapsedTime + x)
+  }
+  particleGeometry.attributes.position.needsUpdate = true
 
   // update controls
   controls.update()
